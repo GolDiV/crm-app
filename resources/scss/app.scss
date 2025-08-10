@@ -1,0 +1,23 @@
+@import "@fontsource/pt-sans/index.css";
+
+$primary: #1976d2;      // Синий Material
+$secondary: #424242;    // Тёмно-серый
+$success: #4caf50;
+$danger: #f44336;
+$warning: #ff9800;
+$info: #2196f3;
+$light: #f8f8fA;
+$dark: #212121;
+$body-bg: #fafafa;
+$body-color: #212121;
+$border-radius: .5rem;  // Более "плавные" углы
+$font-family-sans-serif: 'Segoe UI', 'PT Sans', sans-serif;
+$btn-border-radius: 50rem;
+
+
+
+@import "bootstrap/scss/bootstrap";
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+@import "datatables.net-bs5/css/dataTables.bootstrap5.min.css";
+@import "datatables.net-buttons-bs5/css/buttons.bootstrap5.min.css";
+@import 'datatables.net-select-bs5/css/select.bootstrap5.css';
