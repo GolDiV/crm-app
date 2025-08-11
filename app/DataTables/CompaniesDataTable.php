@@ -11,10 +11,11 @@ use Yajra\DataTables\Html\Column;
 use Yajra\DataTables\Html\Editor\Editor;
 use Yajra\DataTables\Html\Editor\Fields;
 use Yajra\DataTables\Services\DataTable;
-use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\Str;
 
 class CompaniesDataTable extends DataTable
 {
+
     /**
      * Build the DataTable class.
      *
@@ -27,9 +28,6 @@ class CompaniesDataTable extends DataTable
             '<div class="text-center align-middle">
         <input type="checkbox" class="row-checkbox" name="selected[]" value="' . $company->id . '">
     </div>')
-            ->addColumn('region', function (Company $company) {
-                return $company->region ? $company->region->name : '';
-            })
             ->addColumn('sectors', function (Company $company) {
                 $sectors = $company->sectors->pluck('name')->implode(', ');
                 return mb_strtolower($sectors);
@@ -50,6 +48,18 @@ class CompaniesDataTable extends DataTable
                     ->pluck('email')
                     ->implode(', ');
             })
+            ->addColumn('user', function (Company $company) {
+                $userName = $company->user ? $company->user->name : '';
+                $lastWord = Str::of(trim($userName))
+                    ->whenEmpty(fn() => null) // если пустая строка — сразу null
+                    ->explode(' ')
+                    ->filter()                 // убираем пустые элементы
+                    ->last();
+                return $lastWord ?? '';
+            })
+            ->filterColumn('region_name', function ($query, $keyword) {
+                $query->where('regions.name', 'like', "%{$keyword}%");
+            })
             ->rawColumns(['checkbox', 'phones', 'emails'])
             ->setRowId('id');
     }
@@ -61,7 +71,10 @@ class CompaniesDataTable extends DataTable
      */
     public function query(Company $model): QueryBuilder
     {
-        return $model->newQuery()->with(['region', 'sectors', 'phones', 'emails']);
+        return $model->newQuery()
+            ->leftJoin('regions', 'regions.id', '=', 'companies.region_id')
+            ->select('companies.*', 'regions.name as region_name') // <-- ключ
+            ->with(['sectors', 'phones', 'emails']);
     }
 
     /**
@@ -100,6 +113,7 @@ class CompaniesDataTable extends DataTable
                     null, // sectors
                     null, // phones
                     null, // emails
+                    null, // user
                 ],
                 'language' => $lang,
 
@@ -125,11 +139,12 @@ class CompaniesDataTable extends DataTable
                 ->visible(false)       // скрыть в таблице
                 ->searchable(false),
             Column::make('short_name')->title('Название'),
-            Column::make('region')->title('Регион'),
+            Column::make('region_name')->title('Регион'),
             Column::make('city')->title('Город'),
             Column::make('sectors')->title('Виды деятельности'),
             Column::make('phones')->title('Телефоны'),
             Column::make('emails')->title('Email'),
+            Column::make('user')->title('Менеджер'),
         ];
     }
 
