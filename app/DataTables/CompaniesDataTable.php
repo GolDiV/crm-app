@@ -11,6 +11,7 @@ use Yajra\DataTables\Html\Column;
 use Yajra\DataTables\Html\Editor\Editor;
 use Yajra\DataTables\Html\Editor\Fields;
 use Yajra\DataTables\Services\DataTable;
+use Illuminate\Support\Facades\Vite;
 
 class CompaniesDataTable extends DataTable
 {
@@ -24,7 +25,7 @@ class CompaniesDataTable extends DataTable
         return (new EloquentDataTable($query))
             ->addColumn('checkbox', fn(Company $company) =>
             '<div class="text-center align-middle">
-        <input type="checkbox" name="selected[]" value="' . $company->id . '">
+        <input type="checkbox" class="row-checkbox" name="selected[]" value="' . $company->id . '">
     </div>')
             ->addColumn('region', function (Company $company) {
                 return $company->region ? $company->region->name : '';
@@ -68,11 +69,15 @@ class CompaniesDataTable extends DataTable
      */
     public function html(): HtmlBuilder
     {
+        $lang = json_decode(file_get_contents(
+            resource_path('js/datatables/ru.json')
+        ), true);
+
         return $this->builder()
             ->setTableId('companies-table')
             ->columns($this->getColumns())
             ->minifiedAjax()
-            //->orderBy(0, 'asc')
+            ->orderBy(1, 'asc')
             //->selectStyleSingle()
             ->addTableClass('table-sm small table-striped')
             /*  ->buttons([
@@ -96,6 +101,8 @@ class CompaniesDataTable extends DataTable
                     null, // phones
                     null, // emails
                 ],
+                'language' => $lang,
+
             ]);
     }
 
@@ -106,13 +113,13 @@ class CompaniesDataTable extends DataTable
     {
         return [
             Column::computed('checkbox')
-                ->title('<div style="margin-left: 5px;"><input type="checkbox" id="select-all"></div>')
+                ->title('<div style="margin-left: 5px;"><input type="checkbox" data-select-all id="select-all"></div>')
                 ->exportable(false)
                 ->printable(false)
                 ->orderable(false)
                 ->searchable(false)
                 ->width(30)
-                ->addClass('text-center align-middle'),
+                ->addClass('text-center'),
             Column::make('id')
                 ->title('Id')
                 ->visible(false)       // скрыть в таблице
