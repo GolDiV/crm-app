@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Pivots\CompanySector as CompanySectorPivot;
 
 /**
  * @property int $id
@@ -75,7 +76,8 @@ class Company extends Model
 
     public function sectors()
     {
-        return $this->belongsToMany(Sector::class, 'company_sector');
+        return $this->belongsToMany(Sector::class, 'company_sector', 'company_id', 'sector_id')
+            ->using(CompanySectorPivot::class);
     }
 
     public function contacts()
@@ -91,5 +93,34 @@ class Company extends Model
     public function emails()
     {
         return $this->hasMany(Email::class);
+    }
+
+    // app/Models/Company.php (или сервис)
+    public function addSector(int $sectorId): void
+    {
+        $pivot = new \App\Models\Pivots\CompanySector(['sector_id' => $sectorId]);
+        $this->sectors()->save($pivot); // ← создаёт pivot как модель => сработает observer
+    }
+
+    public function removeSector(int $sectorId): void
+    {
+        $this->sectors()->wherePivot('sector_id', $sectorId)->each(function ($rel) {
+            $rel->pivot->delete(); // удаляем pivot моделью => сработает observer
+        });
+    }
+
+    public function setSectors(array $sectorIds): void
+    {
+        // аккуратно синкаем через модели (события будут)
+        $current = $this->sectors()->pluck('sectors.id')->all();
+        $toAdd   = array_diff($sectorIds, $current);
+        $toDel   = array_diff($current, $sectorIds);
+
+        foreach ($toAdd as $sid) {
+            $this->addSector((int)$sid);
+        }
+        foreach ($toDel as $sid) {
+            $this->removeSector((int)$sid);
+        }
     }
 }
